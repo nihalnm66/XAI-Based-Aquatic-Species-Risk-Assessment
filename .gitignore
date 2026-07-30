@@ -1,9 +1,14 @@
+# Ignore all raw and preprocessed data folders (any version)
+data_raw*/
+data_preprocessed*/
+underwater_plastics*/
+
+# Ignore compressed archives and models
 *.zip
 *.tif
 *.pt
-data_raw/
-data_preprocessed_v2/
-underwater_plastics/
+
+# OS & Environment files
 .DS_Store
 __pycache__/
 .ipynb_checkpoints/

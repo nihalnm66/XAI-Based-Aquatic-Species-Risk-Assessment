@@ -1,0 +1,9 @@
+*.zip
+*.tif
+*.pt
+data_raw/
+data_preprocessed_v2/
+underwater_plastics/
+.DS_Store
+__pycache__/
+.ipynb_checkpoints/

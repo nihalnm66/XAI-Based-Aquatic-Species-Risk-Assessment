@@ -1,0 +1,42 @@
+# MARIDA Dataset YOLOv8 Configuration
+
+# The root directory of your newly renamed high-quality dataset
+path: ./data_preprocessed
+
+# Training, Validation, and Test image folders
+train: images/train
+val: images/val
+test: images/test
+
+# Number of classes
+nc: 15
+
+# Class names mapping (Translated from MARIDA's scale to YOLO's scale)
+names:
+  0: 'Marine Debris'
+  1: 'Dense Sargassum'
+  2: 'Sparse Sargassum'
+  3: 'Natural Organic Material'
+  4: 'Ship'
+  5: 'Clouds'
+  6: 'Marine Water'
+  7: 'Sediment-Laden Water'
+  8: 'Foam'
+  9: 'Turbid Water'
+  10: 'Shallow Water'
+  11: 'Waves'
+  12: 'Cloud Shadows'
+  13: 'Wakes'
+  14: 'Mixed Water'
+
+
+
+
+
+
+
+
+
+
+
+  

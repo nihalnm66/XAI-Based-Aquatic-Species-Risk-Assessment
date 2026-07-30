@@ -2,12 +2,10 @@
 data_raw*/
 data_preprocessed*/
 underwater_plastics*/
-
 # Ignore compressed archives and models
 *.zip
 *.tif
 *.pt
-
 # OS & Environment files
 .DS_Store
 __pycache__/

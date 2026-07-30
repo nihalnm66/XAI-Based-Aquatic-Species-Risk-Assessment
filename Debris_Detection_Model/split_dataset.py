@@ -1,7 +1,7 @@
 import os
 import shutil
 
-def organize_v2_splits(preprocessed_dir, splits_dir):
+def organize_splits(preprocessed_dir, splits_dir):
     categories = ['train', 'val', 'test']
     
     for cat in categories:
@@ -56,8 +56,8 @@ def organize_v2_splits(preprocessed_dir, splits_dir):
         
         print(f"✅ Successfully prepared {move_count} files for {cat}")
 
-# Target the new V2 folder!
-PREPROCESSED_FOLDER = 'data_preprocessed_v2'
+# Target preprocessed folder
+PREPROCESSED_FOLDER = 'data_preprocessed'
 SPLITS_FOLDER = 'data_raw/MARIDA/splits'
 
-organize_v2_splits(PREPROCESSED_FOLDER, SPLITS_FOLDER)
+organize_splits(PREPROCESSED_FOLDER, SPLITS_FOLDER)

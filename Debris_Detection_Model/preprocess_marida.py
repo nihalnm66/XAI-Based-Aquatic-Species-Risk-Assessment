@@ -57,7 +57,7 @@ def process_and_augment(tif_path, mask_path, output_dir, base_name):
     with open(os.path.join(output_dir, 'labels', f"{base_name}_flip.txt"), 'w') as f: 
         f.write("\n".join(flipped_lines))
 
-def build_v2(raw_dir, out_dir):
+def preprocess_marida(raw_dir, out_dir):
     os.makedirs(os.path.join(out_dir, 'images'), exist_ok=True)
     os.makedirs(os.path.join(out_dir, 'labels'), exist_ok=True)
     
@@ -74,6 +74,10 @@ def build_v2(raw_dir, out_dir):
                     found_count += 1
                     if found_count % 100 == 0: print(f"Processed {found_count} original patches...")
 
-    print(f"✅ V2 Dataset Ready! Created {found_count * 2} files (Original + Flipped).")
+    print(f"✅ Preprocessed Dataset Ready! Created {found_count * 2} files (Original + Flipped).")
 
-build_v2('data_raw/MARIDA', 'data_preprocessed_v2')
+# Target folders
+RAW_FOLDER = 'data_raw/MARIDA'
+PREPROCESSED_FOLDER = 'data_preprocessed'
+
+preprocess_marida(RAW_FOLDER, PREPROCESSED_FOLDER)

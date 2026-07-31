@@ -1,12 +1,42 @@
+# =========================
+# Machine Learning & Data
+# =========================
 # Ignore all raw and preprocessed data folders (any version)
 data_raw*/
 data_preprocessed*/
 underwater_plastics*/
+
 # Ignore compressed archives and models
 *.zip
 *.tif
 *.pt
+
 # OS & Environment files
 .DS_Store
 __pycache__/
 .ipynb_checkpoints/
+
+# =========================
+# Backend (Spring Boot / Maven)
+# =========================
+Backend_API/target/
+Backend_API/!.mvn/wrapper/maven-wrapper.jar
+Backend_API/log/
+Backend_API/logs/
+
+# Compiled class files
+*.class
+
+# Package Files
+*.jar
+*.war
+*.nar
+*.ear
+*.tar.gz
+*.rar
+
+# =========================
+# IDEs and Editors
+# =========================
+.idea/
+*.iml

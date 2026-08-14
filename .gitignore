@@ -20,7 +20,7 @@ __pycache__/
 # Backend (Spring Boot / Maven)
 # =========================
 Backend_API/target/
-Backend_API/!.mvn/wrapper/maven-wrapper.jar
+Backend_API/.mvn/wrapper/maven-wrapper.jar
 Backend_API/log/
 Backend_API/logs/
 

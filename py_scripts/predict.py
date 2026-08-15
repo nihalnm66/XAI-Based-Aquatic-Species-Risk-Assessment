@@ -1,3 +1,4 @@
+
 import argparse
 import sys
 from ultralytics import YOLO
@@ -9,7 +10,7 @@ def main():
 
     try:
         # Load the model weights
-        model_path = "../Debris_Detection_Model/debris_v2_medium_best.pt"
+        model_path = "../Debris_Detection_Model/yolo11m_aquatic_debris.pt"
         model = YOLO(model_path)
 
         # Run inference (verbose=False hides the messy YOLO speed logs)

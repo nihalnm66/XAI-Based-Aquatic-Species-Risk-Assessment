@@ -28,54 +28,54 @@ Without targeted enhancement, standard object detection models experience massiv
 
 ## 🛠️ Phase 1: Preprocessing & Enhancement Pipeline
 
-Implemented via Python, OpenCV, and NumPy inside Google Colab (`Debris_Train.ipynb`), the custom pre-processing pipeline executes the following steps[cite: 1, 2]:
+Implemented via Python, OpenCV, and NumPy inside Google Colab (`Debris_Train.ipynb`), the custom pre-processing pipeline executes the following steps:
 
-1. **Dataset Ingestion**: Automatically mounts Google Drive, extracts the compressed archive, and loads the `underwater_plastics` dataset[cite: 1, 2].
+1. **Dataset Ingestion**: Automatically mounts Google Drive, extracts the compressed archive, and loads the `underwater_plastics` dataset.
 2. **Gray World White-Balance & Color Correction**: 
-   * Calculates the arithmetic mean intensity of the Blue, Green, and Red channels across the image[cite: 1, 2].
-   * Derives an average gray scalar to dynamically scale color channels, neutralizing dominant aquatic tints[cite: 1, 2].
+   * Calculates the arithmetic mean intensity of the Blue, Green, and Red channels across the image.
+   * Derives an average gray scalar to dynamically scale color channels, neutralizing dominant aquatic tints.
 3. **LAB Color Space Conversion**: 
-   * Splits the image into **L** (Lightness/Luminance), **A** (Green-Red components), and **B** (Blue-Yellow components) channels to process lighting adjustments independently of true color information[cite: 1, 2].
+   * Splits the image into **L** (Lightness/Luminance), **A** (Green-Red components), and **B** (Blue-Yellow components) channels to process lighting adjustments independently of true color information.
 4. **CLAHE (Contrast Limited Adaptive Histogram Equalization)**: 
-   * Applied directly to the $L$-channel using a defined tile grid size ($8 \times 8$) and clip limit to cut through optical scattering and amplify localized visibility of hidden debris[cite: 1, 2].
+   * Applied directly to the $L$-channel using a defined tile grid size ($8 \times 8$) and clip limit to cut through optical scattering and amplify localized visibility of hidden debris.
 
-* **Total Processed Volume:** **5,130 raw underwater images** successfully enhanced across training, validation, and test splits[cite: 1, 2].
+* **Total Processed Volume:** **5,130 raw underwater images** successfully enhanced across training, validation, and test splits.
 
 ---
 
 ## 🚀 Phase 2: Model Training & Architecture
 
-The object detection engine utilizes **YOLO11m (Medium)**, chosen for its optimal balance between inference speed and parameter capacity (~20.04 million parameters) to support downstream explainability modules[cite: 1, 2].
+The object detection engine utilizes **YOLO11m (Medium)**, chosen for its optimal balance between inference speed and parameter capacity (~20.04 million parameters) to support downstream explainability modules.
 
 * **Training Specifications:**
-  * **Framework:** Ultralytics YOLOv11 (PyTorch / CUDA backend)[cite: 1, 2]
-  * **Base Weights:** `yolo11m.pt` (Transfer Learning)[cite: 1, 2]
-  * **Epochs:** 50[cite: 1, 2]
-  * **Image Size:** $640 \times 640$[cite: 1, 2]
-  * **Batch Size:** 16[cite: 1, 2]
-  * **Dataset Configuration:** `/content/preprocessed_dataset/data.yaml` (15 specialized marine debris classes)[cite: 1, 2]
+  * **Framework:** Ultralytics YOLOv11 (PyTorch / CUDA backend)
+  * **Base Weights:** `yolo11m.pt` (Transfer Learning)
+  * **Epochs:** 50
+  * **Image Size:** $640 \times 640$
+  * **Batch Size:** 16
+  * **Dataset Configuration:** `/content/preprocessed_dataset/data.yaml` (15 specialized marine debris classes)
 
 ---
 
 ## 📊 Phase 3: Model Evaluation & Performance Metrics
 
-Following 50 epochs of training, the model weights checkpoint (`best.pt`) was validated against 1,001 validation images (1,891 total instances)[cite: 1, 2]:
+Following 50 epochs of training, the model weights checkpoint (`best.pt`) was validated against 1,001 validation images (1,891 total instances):
 
 ### **Core Accuracy Metrics**
-* **mAP50 (Overall Accuracy):** **73.5%** ($0.7346$)[cite: 1, 2]
-* **mAP50-95 (Strict Accuracy):** **48.7%** ($0.4867$)[cite: 1, 2]
-* **Precision (P):** **78.7%** ($0.7872$)[cite: 1, 2]
-* **Recall (R):** **68.4%** ($0.6844$)[cite: 1, 2]
+* **mAP50 (Overall Accuracy):** **73.5%** ($0.7346$)
+* **mAP50-95 (Strict Accuracy):** **48.7%** ($0.4867$)
+* **Precision (P):** **78.7%** ($0.7872$)
+* **Recall (R):** **68.4%** ($0.6844$)
 
 ### **Class-Specific Performance (mAP50)**
-* 🕶️ **Sunglasses:** 99.5%[cite: 1, 2]
-* 📱 **Cellphone:** 97.5%[cite: 1, 2]
-* 🛍️ **Plastic Bag (`pbag`):** 96.4%[cite: 1, 2]
-* 🥅 **Net (`net`):** 93.5%[cite: 1, 2]
-* 🍾 **Glass Bottle (`gbottle`):** 82.8%[cite: 1, 2]
-* 🧤 **Glove:** 82.6%[cite: 1, 2]
-* 🧃 **Plastic Bottle (`pbottle`):** 83.3%[cite: 1, 2]
-* 🛞 **Tire:** 78.7%[cite: 1, 2]
+* 🕶️ **Sunglasses:** 99.5%
+* 📱 **Cellphone:** 97.5%
+* 🛍️ **Plastic Bag (`pbag`):** 96.4%
+* 🥅 **Net (`net`):** 93.5%
+* 🍾 **Glass Bottle (`gbottle`):** 82.8%
+* 🧤 **Glove:** 82.6%
+* 🧃 **Plastic Bottle (`pbottle`):** 83.3%
+* 🛞 **Tire:** 78.7%
 
 ---
 
@@ -96,8 +96,8 @@ XAI-Based-Aquatic-Species-Risk-Assessment/
 │
 ├── Backend_Service/                  # Java Spring Boot REST API & database orchestration
 ├── Debris_Detection_Model/           # Model weights and training assets
-│   ├── Debris_Train.ipynb            # Complete Google Colab training & validation notebook[cite: 1, 2]
-│   └── yolo11m_aquatic_debris.pt     # Custom-trained YOLO11m production weights (~40.5MB)[cite: 1, 2]
+│   ├── Debris_Train.ipynb            # Complete Google Colab training & validation notebook
+│   └── yolo11m_aquatic_debris.pt     # Custom-trained YOLO11m production weights (~40.5MB)
 ├── py_scripts/                       # Python preprocessing and inference wrappers
 │   └── predict.py                    # Local inference script called by the Spring Boot backend
 └── README.md                         # Project documentation
@@ -152,9 +152,5 @@ curl -X POST "http://localhost:8080/api/analyze?path=/path/to/image.jpg"
   "overallRiskScore": "HIGH",
   "sessionId": "fb216712-2c76-404a-9b56-709e4082b494"
 }
-
-```
-
-```
 
 ```

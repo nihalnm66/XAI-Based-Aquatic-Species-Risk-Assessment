@@ -1,4 +1,3 @@
-```markdown
 # 🌊 XAI-Based Aquatic Species Risk Assessment & Marine Debris Detection
 
 An advanced, end-to-end intelligent system engineered to detect, classify, and evaluate the environmental risk of marine debris and aquatic waste from underwater imagery. This project integrates rigorous computer vision theory, custom-trained deep learning object detection, and a production-grade Java Spring Boot backend persistence layer.

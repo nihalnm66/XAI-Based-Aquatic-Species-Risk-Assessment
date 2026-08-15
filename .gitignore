@@ -39,4 +39,4 @@ Backend_API/logs/
 # IDEs and Editors
 # =========================
 .idea/
-*.iml
+*.imlBackend_Service/target/

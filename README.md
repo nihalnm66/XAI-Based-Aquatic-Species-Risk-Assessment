@@ -101,8 +101,6 @@ XAI-Based-Aquatic-Species-Risk-Assessment/
 │   └── predict.py                    # Local inference script called by the Spring Boot backend
 └── README.md                         # Project documentation
 
-```
-
 ---
 
 ## ⚙️ Installation & Quick Start

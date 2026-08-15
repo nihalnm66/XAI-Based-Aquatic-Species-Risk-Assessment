@@ -1,49 +1,60 @@
-
-import argparse
+# py_scripts/predict.py
 import sys
+import json
+import os
 from ultralytics import YOLO
 
 def main():
-    parser = argparse.ArgumentParser(description="Aquatic Debris Detection Inference")
-    parser.add_argument("--image", type=str, required=True, help="Path to input image")
-    args = parser.parse_args()
+    # Java will pass these arguments
+    if len(sys.argv) < 3:
+        print(json.dumps({"error": "Missing arguments"}))
+        sys.exit(1)
+
+    input_image_path = sys.argv[1]
+    output_image_path = sys.argv[2]
+    
+    # Path to your custom weights (relative to where Java runs the script)
+    model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../Debris_Detection_Model/yolo11m_aquatic_debris.pt"))
 
     try:
-        # Load the model weights
-        model_path = "../Debris_Detection_Model/yolo11m_aquatic_debris.pt"
+        # Load the custom model
         model = YOLO(model_path)
-
-        # Run inference (verbose=False hides the messy YOLO speed logs)
-        results = model(args.image, verbose=False)
-        # Run inference (verbose=False hides the messy YOLO speed logs)
-        results = model(args.image, verbose=False)
-
-        # NEW: Save the image with the bounding boxes drawn on it!
-        annotated_image_path = args.image.replace(".jpg", "_result.jpg")
-        results[0].save(filename=annotated_image_path)
-        detections = []
-        for r in results:
-            # zip() lets us loop through class IDs and confidence scores at the same time
-            for c, conf in zip(r.boxes.cls, r.boxes.conf):
-                class_name = model.names[int(c)]
-                confidence_percentage = float(conf) * 100
-                
-                # Format exactly how it will appear in the database
-                detections.append(f"{class_name} ({confidence_percentage:.1f}%)")
-
-        if detections:
-            summary = f"Detected: {', '.join(detections)}"
-            risk = "HIGH"
-        else:
-            summary = "No debris detected. Environment clear."
+        
+        # Run inference
+        results = model(input_image_path)
+        
+        # Save the image with bounding boxes drawn
+        results[0].save(output_image_path)
+        
+        # Analyze detections for Risk Score
+        detections = results[0].boxes.cls.tolist()
+        confidences = results[0].boxes.conf.tolist()
+        names = model.names
+        
+        if len(detections) == 0:
             risk = "LOW"
-
-        # Print final clean output to Spring Boot
-        print(f"Summary: {summary} | Risk: {risk}")
-
+            summary = "No debris detected. Ecosystem appears clear."
+        else:
+            # Simple risk logic based on quantity (you can customize this)
+            risk = "HIGH" if len(detections) >= 5 else "MEDIUM"
+            
+            # Format a nice summary string
+            detected_classes = [names[int(c)] for c in detections]
+            unique_classes = set(detected_classes)
+            avg_conf = sum(confidences) / len(confidences) * 100 if confidences else 0
+            summary = f"Detected {len(detections)} objects ({', '.join(unique_classes)}) | Avg Confidence: {avg_conf:.1f}%"
+            
+        # Create output JSON for Java
+        output = {
+            "overallRiskScore": risk,
+            "analysisSummary": summary
+        }
+        
+        # Print ONLY the JSON at the very end so Java can parse it
+        print(f"---JSON_START---{json.dumps(output)}---JSON_END---")
+        
     except Exception as e:
-        print(f"Error during execution: {str(e)}")
-        sys.exit(1)
+        print(f"---JSON_START---{json.dumps({'error': str(e)})}---JSON_END---")
 
 if __name__ == "__main__":
     main()

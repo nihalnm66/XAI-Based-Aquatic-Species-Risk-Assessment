@@ -1,0 +1,6 @@
+/Users/nihal/Desktop/MAC/project/XAI-Based-Aquatic-Species-Risk-Assessment/Backend_Service/src/main/java/com/aquaculture/backend_orchestrator/BackendOrchestratorApplication.java
+/Users/nihal/Desktop/MAC/project/XAI-Based-Aquatic-Species-Risk-Assessment/Backend_Service/src/main/java/com/aquaculture/backend_orchestrator/CorsConfig.java
+/Users/nihal/Desktop/MAC/project/XAI-Based-Aquatic-Species-Risk-Assessment/Backend_Service/src/main/java/com/aquaculture/backend_orchestrator/controller/AnalysisController.java
+/Users/nihal/Desktop/MAC/project/XAI-Based-Aquatic-Species-Risk-Assessment/Backend_Service/src/main/java/com/aquaculture/backend_orchestrator/repository/DetectionRepository.java
+/Users/nihal/Desktop/MAC/project/XAI-Based-Aquatic-Species-Risk-Assessment/Backend_Service/src/main/java/com/aquaculture/backend_orchestrator/service/ImageAnalysisService.java
+/Users/nihal/Desktop/MAC/project/XAI-Based-Aquatic-Species-Risk-Assessment/Backend_Service/src/main/java/entity/DetectionResult.java

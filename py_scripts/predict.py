@@ -15,6 +15,7 @@ def main():
     
     # Path to your custom weights (relative to where Java runs the script)
     model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../Debris_Detection_Model/yolo11m_aquatic_debris.pt"))
+    #model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../Debris_Detection_Model/best.pt"))
 
     try:
         # Load the custom model

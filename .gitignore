@@ -40,3 +40,5 @@ Backend_API/logs/
 # =========================
 .idea/
 *.imlBackend_Service/target/
+Backend_Service/target/
+Backend_Service/src/main/resources/static/outputs/*.jpg

@@ -1,25 +1,23 @@
-package com.aquaculture.backend_orchestrator;
+package com.aquaculture.backend_orchestrator; // Update this package if your WebConfig is inside a 'config' folder
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // user.dir points to your Backend_Service folder
+        // Find the absolute physical path to your outputs folder
         String projectDir = System.getProperty("user.dir");
+        String outputDir = Paths.get(projectDir, "src", "main", "resources", "static", "outputs").toFile().getAbsolutePath();
 
-        // 1. Serve the output images so they can be viewed
-        String outputDirPath = "file:" + projectDir + "/src/main/resources/static/outputs/";
+        // Tell Spring to serve requests to /outputs/** directly from that physical folder
         registry.addResourceHandler("/outputs/**")
-                .addResourceLocations(outputDirPath);
-
-        // 2. Serve your completely separate Frontend folder!
-        // The "/../" tells it to go up one level and look inside the Frontend folder
-        String frontendDirPath = "file:" + projectDir + "/../Frontend/";
-        registry.addResourceHandler("/**")
-                .addResourceLocations(frontendDirPath);
+                .addResourceLocations("file:" + outputDir + "/");
     }
 }

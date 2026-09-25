@@ -3,121 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aquatic Debris Risk Assessment</title>
-    <!-- Tailwind CSS for modern styling -->
+    <title>Aquatic Debris Detector</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-[#0b1120] text-slate-100 min-h-screen flex flex-col items-center justify-center p-6 font-sans">
-
-    <div class="max-w-2xl w-full bg-[#111827] rounded-2xl shadow-2xl p-8 border border-slate-800">
+<body class="bg-[#0b0f19] text-gray-100 min-h-screen p-6 font-sans">
+    <div class="max-w-3xl mx-auto">
         <!-- Header -->
-        <h1 class="text-3xl font-bold text-center mb-2 text-cyan-400">🌊 Aquatic Debris Detector</h1>
-        <p class="text-center text-slate-400 mb-8 text-sm">Upload an image to process through the YOLO pipeline.</p>
-
-        <!-- Upload Form -->
-        <form id="uploadForm" class="space-y-6">
-            <div class="flex items-center justify-center w-full">
-                <label class="flex flex-col items-center justify-center w-full h-40 border-2 border-slate-700 border-dashed rounded-xl cursor-pointer bg-[#1f2937] hover:bg-slate-700/50 transition duration-300">
-                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                        <svg class="w-10 h-10 mb-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                        <p class="text-sm text-slate-300"><span class="font-semibold text-cyan-400">Click to browse</span> or drag image here</p>
-                    </div>
-                    <input id="fileInput" type="file" class="hidden" accept="image/png, image/jpeg, image/jpg, image/webp" required />
-                </label>
-            </div>
-
-            <!-- Image Preview (Optional nice-to-have) -->
-            <p id="fileNameDisplay" class="text-center text-sm text-cyan-300 hidden"></p>
-
-            <button type="submit" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-lg py-3 px-4 rounded-xl transition duration-300 shadow-[0_0_15px_rgba(6,182,212,0.4)] hover:shadow-[0_0_25px_rgba(6,182,212,0.6)]">
-                Run Inference & Detect
-            </button>
-        </form>
-
-        <!-- Loading Indicator -->
-        <div id="loading" class="hidden text-center mt-8">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-cyan-500 border-t-transparent"></div>
-            <p class="text-slate-400 text-sm mt-3 animate-pulse">Processing image through YOLO model...</p>
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-blue-400">Aquatic Debris Detector</h1>
+            <p class="text-gray-400 text-sm mt-1">Upload an image to process through the YOLO pipeline and risk assessment framework.</p>
         </div>
 
-        <!-- Results Display -->
-        <div id="results" class="hidden mt-8 space-y-6 border-t border-slate-800 pt-8">
-            <!-- Text Stats -->
-            <div class="bg-[#0b1120] p-5 rounded-xl border border-slate-800 shadow-inner">
-                <p class="text-slate-300 text-sm"><span class="text-slate-500 uppercase tracking-wider font-semibold text-xs mr-2">Risk Assessment:</span> <span id="riskScore" class="font-bold text-lg text-white"></span></p>
-                <p class="mt-2 text-slate-300 text-sm"><span class="text-slate-500 uppercase tracking-wider font-semibold text-xs mr-2">Summary:</span> <span id="summaryText" class="text-white"></span></p>
+        <!-- Login Authentication Card -->
+        <div id="authCard" class="bg-[#1f2937] p-6 rounded-xl shadow-lg border border-slate-700 mb-6">
+            <h2 class="text-xl font-bold mb-4 text-white">System Authentication Required</h2>
+            <div class="space-y-4">
+                <input type="text" id="username" placeholder="Username" class="w-full bg-[#111827] border border-slate-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+                <input type="password" id="password" placeholder="Password" class="w-full bg-[#111827] border border-slate-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+                <button onclick="loginUser()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition">Login & Get Token</button>
+                <p id="loginError" class="text-red-400 text-sm hidden text-center">Invalid username or password.</p>
             </div>
-            
-            <!-- Output Image -->
-            <div>
-                <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Annotated Output:</h3>
-                <div class="bg-[#0b1120] p-2 rounded-xl border border-slate-800">
-                    <img id="outputImage" src="" alt="YOLO Detections" class="rounded-lg w-full object-contain max-h-[500px]" />
+        </div>
+
+        <!-- Main App Section (Hidden until authenticated) -->
+        <div id="appSection" class="hidden space-y-6">
+            <!-- Upload Box -->
+            <div class="bg-[#1f2937] p-8 rounded-xl shadow-lg border border-slate-700 text-center">
+                <div class="border-2 border-slate-600 border-dashed rounded-xl p-6 cursor-pointer hover:border-blue-500 transition">
+                    <input type="file" id="imageInput" class="hidden" accept="image/*" onchange="previewFile()">
+                    <label for="imageInput" class="cursor-pointer">
+                        <p class="text-gray-300 font-medium">Click to browse or drag image here</p>
+                        <p class="text-xs text-gray-500 mt-1">PNG, JPG, WEBP supported</p>
+                    </label>
+                </div>
+                <div id="fileInfo" class="mt-4 text-sm text-blue-400 hidden"></div>
+                <button onclick="uploadImage()" class="mt-6 w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition">Run Inference & Detect Processing</button>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading" class="hidden text-center py-6 text-blue-400 font-medium animate-pulse">
+                Processing through YOLO pipeline and analyzing risk...
+            </div>
+
+            <!-- Results Box -->
+            <div id="results" class="hidden bg-[#1f2937] p-6 rounded-xl shadow-lg border border-slate-700 space-y-4">
+                <h2 class="text-xl font-bold text-white">Analysis Results</h2>
+                
+                <div class="flex flex-col md:flex-row gap-6">
+                    <!-- Image Display -->
+                    <div class="w-full md:w-1/2 flex items-center justify-center bg-[#111827] rounded-lg border border-slate-600 p-2 min-h-[200px]">
+                        <img id="resultImage" class="rounded shadow-md w-full object-contain hidden" alt="YOLO Output">
+                        <p id="imagePlaceholder" class="text-gray-500 text-sm italic">Image will appear here</p>
+                    </div>
+                    
+                    <!-- Text Results -->
+                    <div class="w-full md:w-1/2 space-y-4 text-sm">
+                        <p><strong class="text-gray-400">Session ID:</strong> <span id="sessionId" class="text-gray-200 break-all"></span></p>
+                        <p><strong class="text-gray-400">Risk Score:</strong> <span id="riskScore" class="font-bold"></span></p>
+                        <div>
+                            <strong class="text-gray-400 text-sm">Summary:</strong>
+                            <p id="summary" class="bg-[#111827] p-3 rounded-lg text-gray-300 mt-1 text-sm border border-slate-700"></p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Frontend Logic -->
     <script>
-        // Update file name display when a file is selected
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const fileNameDisplay = document.getElementById('fileNameDisplay');
-            if (this.files && this.files.length > 0) {
-                fileNameDisplay.textContent = 'Selected: ' + this.files[0].name;
-                fileNameDisplay.classList.remove('hidden');
-            }
-        });
+        let authToken = "";
 
-        // Handle the form submission
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const fileInput = document.getElementById('fileInput');
-            if (fileInput.files.length === 0) return;
+        async function loginUser() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            try {
+                const res = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    authToken = data.token || data.jwt || data.accessToken; 
+                    
+                    document.getElementById('authCard').classList.add('hidden');
+                    document.getElementById('appSection').classList.remove('hidden');
+                } else {
+                    document.getElementById('loginError').classList.remove('hidden');
+                }
+            } catch (err) {
+                alert('Backend connection failed. Ensure Spring Boot is running on port 8080.');
+            }
+        }
+
+        function previewFile() {
+            const file = document.getElementById('imageInput').files[0];
+            if (file) {
+                const info = document.getElementById('fileInfo');
+                info.textContent = `Selected: ${file.name}`;
+                info.classList.remove('hidden');
+            }
+        }
+
+        async function uploadImage() {
+            const fileInput = document.getElementById('imageInput');
+            if (fileInput.files.length === 0) {
+                alert('Please select an image file first.');
+                return;
+            }
+
+            // Reset UI states
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('resultImage').classList.add('hidden');
+            document.getElementById('imagePlaceholder').classList.remove('hidden');
+            document.getElementById('sessionId').innerText = '';
+            document.getElementById('summary').innerText = '';
+            document.getElementById('riskScore').innerText = '';
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
 
-            // Show loading, hide results
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('results').classList.add('hidden');
-
             try {
-                // Since Spring Boot is serving this via WebConfig, we can use the relative path!
-                const response = await fetch('/api/analyze-upload', {
+                const response = await fetch('http://localhost:8080/api/analyze-upload', {
                     method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + authToken.trim()
+                    },
                     body: formData
                 });
 
-                if (!response.ok) throw new Error('Failed to analyze image (Server error)');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    document.getElementById('sessionId').innerText = data.sessionId || 'N/A';
+                    
+                    if (data.analysisSummary) {
+                        document.getElementById('summary').innerText = data.analysisSummary;
+                    }
+                    
+                    if (data.overallRiskScore) {
+                        const riskEl = document.getElementById('riskScore');
+                        riskEl.innerText = data.overallRiskScore;
+                        riskEl.className = data.overallRiskScore === 'HIGH' ? 'text-red-400 font-bold' : 'text-green-400 font-bold';
+                    }
 
-                const data = await response.json();
+                    // Directly assign the Base64 data string without any localhost prefix
+                    if (data.annotatedImageUrl) {
+                        const img = document.getElementById('resultImage');
+                        img.src = data.annotatedImageUrl; 
+                        img.classList.remove('hidden');
+                        document.getElementById('imagePlaceholder').classList.add('hidden');
+                    } else {
+                        console.warn("No annotated image URL/Base64 string provided by the backend.");
+                    }
 
-                // Populate UI
-                const riskElement = document.getElementById('riskScore');
-                riskElement.innerText = data.overallRiskScore;
-                
-                // Optional: Color code the risk score text
-                if(data.overallRiskScore === "HIGH") {
-                    riskElement.className = "font-bold text-lg text-red-500";
-                } else if(data.overallRiskScore === "MEDIUM") {
-                    riskElement.className = "font-bold text-lg text-yellow-500";
+                    document.getElementById('results').classList.remove('hidden');
                 } else {
-                    riskElement.className = "font-bold text-lg text-green-500";
+                    const errText = await response.text();
+                    console.error("Server Error:", errText);
+                    alert('Unauthorized or processing error. Status: ' + response.status);
                 }
-
-                document.getElementById('summaryText').innerText = data.analysisSummary;
-                document.getElementById('outputImage').src = data.annotatedImageUrl;
-
-                // Show results
-                document.getElementById('results').classList.remove('hidden');
             } catch (err) {
-                alert('Error: ' + err.message);
+                console.error("Fetch Error:", err);
+                alert('Failed to connect to backend.');
             } finally {
-                // Hide loading
                 document.getElementById('loading').classList.add('hidden');
             }
-        });
+        }
     </script>
 </body>
 </html>

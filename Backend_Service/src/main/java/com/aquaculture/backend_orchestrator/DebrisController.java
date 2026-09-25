@@ -9,6 +9,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -20,26 +22,26 @@ public class DebrisController {
     @PostMapping("/analyze-upload")
     public ResponseEntity<Map<String, String>> analyzeUpload(@RequestParam("file") MultipartFile file) {
         try {
-            String projectDir = System.getProperty("user.dir"); // This is your Backend_Service folder
+            String projectDir = System.getProperty("user.dir");
 
-            // 1. Create a folder to store the output images so the frontend can display them
+            // 1. Output directory
             File outputDir = new File(projectDir, "src/main/resources/static/outputs");
             if (!outputDir.exists()) outputDir.mkdirs();
 
-            // 2. Save the uploaded file temporarily
+            // 2. Save temporary uploaded file
             String uniqueId = UUID.randomUUID().toString();
             String fileName = uniqueId + ".jpg";
             File inputFile = new File(System.getProperty("java.io.tmpdir"), "input_" + fileName);
             file.transferTo(inputFile);
 
-            // 3. Define where Python should save the annotated image
+            // 3. Output target for Python
             File outputFile = new File(outputDir, fileName);
 
-            // 4. Setup Python Script Execution
+            // 4. Execute Python script
             String pythonScriptPath = new File(projectDir, "../py_scripts/predict.py").getCanonicalPath();
 
             ProcessBuilder pb = new ProcessBuilder(
-                    "python3", // Use python3 for Mac
+                    "python3",
                     pythonScriptPath,
                     inputFile.getAbsolutePath(),
                     outputFile.getAbsolutePath()
@@ -47,31 +49,35 @@ public class DebrisController {
             pb.redirectErrorStream(true);
             Process process = pb.start();
 
-            // 5. Read Python Output
+            // 5. Read output
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             StringBuilder consoleOutput = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
                 consoleOutput.append(line);
-                System.out.println("Python: " + line); // Print YOLO logs to IntelliJ console
+                System.out.println("Python: " + line);
             }
             process.waitFor();
 
-            // 6. Extract the JSON from Python output
+            // 6. Parse response & attach Base64 Image
             String outputStr = consoleOutput.toString();
-            if(outputStr.contains("---JSON_START---") && outputStr.contains("---JSON_END---")) {
+            if (outputStr.contains("---JSON_START---") && outputStr.contains("---JSON_END---")) {
                 String jsonString = outputStr.substring(
                         outputStr.indexOf("---JSON_START---") + 16,
                         outputStr.indexOf("---JSON_END---")
                 );
 
-                // Parse the JSON into a Map
                 ObjectMapper mapper = new ObjectMapper();
-                Map<String, String> result = mapper.readValue(jsonString, new TypeReference<Map<String, String>>(){});
+                Map<String, String> result = mapper.readValue(jsonString, new TypeReference<Map<String, String>>() {});
 
-                // Add the frontend variables
                 result.put("sessionId", uniqueId);
-                result.put("annotatedImageUrl", "/outputs/" + fileName); // Path for the frontend to load image
+
+                // Convert the saved image directly into a Base64 data URI
+                if (outputFile.exists()) {
+                    byte[] imageBytes = Files.readAllBytes(outputFile.toPath());
+                    String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+                    result.put("annotatedImageUrl", "data:image/jpeg;base64," + base64Image);
+                }
 
                 return ResponseEntity.ok(result);
             } else {

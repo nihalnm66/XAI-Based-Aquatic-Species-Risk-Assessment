@@ -36,23 +36,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // 2. Extract the token and read the username
-        jwt = authHeader.substring(7);
-        username = jwtUtil.extractUsername(jwt);
+        jwt = authHeader.substring(7).trim();
+        try {
+            username = jwtUtil.extractUsername(jwt);
 
-        // 3. If username exists and isn't already authenticated in this session
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            // 3. If username exists and isn't already authenticated in this session
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            // 4. Validate the token against the user
-            if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                // 4. Validate the token against the user
+                if (jwtUtil.validateToken(jwt, userDetails.getUsername())) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // 5. Approve the request globally
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    // 5. Approve the request globally
+                    org.springframework.security.core.context.SecurityContext context = SecurityContextHolder.createEmptyContext();
+                    context.setAuthentication(authToken);
+                    SecurityContextHolder.setContext(context);
+                } else {
+                    logger.warn("validateToken returned false for user: " + username);
+                }
             }
+        } catch (Exception e) {
+            logger.warn("JWT authentication failed: " + e.getMessage());
         }
+
         filterChain.doFilter(request, response);
     }
 }

@@ -42,3 +42,22 @@ Backend_API/logs/
 *.imlBackend_Service/target/
 Backend_Service/target/
 Backend_Service/src/main/resources/static/outputs/*.jpg
+# Java / Maven
+target/
+*.class
+.mvn/
+*.jar
+
+# IDE & OS
+.idea/
+*.iml
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+
+# Large Weights (Optional: if your .pt files exceed 100MB)
+# *.pt

@@ -2,6 +2,7 @@ package com.aquaculture.backend_orchestrator;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,8 +20,9 @@ import java.util.UUID;
 @RequestMapping("/api")
 public class DebrisController {
 
-    @PostMapping("/analyze-upload")
+    @PostMapping({"/analyze", "/analyze-upload"})
     public ResponseEntity<Map<String, String>> analyzeUpload(@RequestParam("file") MultipartFile file) {
+        File inputFile = null;
         try {
             String projectDir = System.getProperty("user.dir");
 
@@ -31,7 +33,7 @@ public class DebrisController {
             // 2. Save temporary uploaded file
             String uniqueId = UUID.randomUUID().toString();
             String fileName = uniqueId + ".jpg";
-            File inputFile = new File(System.getProperty("java.io.tmpdir"), "input_" + fileName);
+            inputFile = new File(System.getProperty("java.io.tmpdir"), "input_" + fileName);
             file.transferTo(inputFile);
 
             // 3. Output target for Python
@@ -54,10 +56,10 @@ public class DebrisController {
             StringBuilder consoleOutput = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
-                consoleOutput.append(line);
+                consoleOutput.append(line).append("\n");
                 System.out.println("Python: " + line);
             }
-            process.waitFor();
+            int exitCode = process.waitFor();
 
             // 6. Parse response & attach Base64 Image
             String outputStr = consoleOutput.toString();
@@ -72,6 +74,11 @@ public class DebrisController {
 
                 result.put("sessionId", uniqueId);
 
+                // Check if Python reported an explicit error in the JSON payload
+                if (result.containsKey("error")) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+                }
+
                 // Convert the saved image directly into a Base64 data URI
                 if (outputFile.exists()) {
                     byte[] imageBytes = Files.readAllBytes(outputFile.toPath());
@@ -81,14 +88,19 @@ public class DebrisController {
 
                 return ResponseEntity.ok(result);
             } else {
-                throw new RuntimeException("Could not parse JSON from Python script.");
+                String details = outputStr.isBlank() ? ("Process exited with code " + exitCode) : outputStr.trim();
+                throw new RuntimeException("Could not parse JSON from Python script. Python output: " + details);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
             Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.status(500).body(error);
+            error.put("error", e.getMessage() != null ? e.getMessage() : "Unknown analysis failure");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        } finally {
+            if (inputFile != null && inputFile.exists()) {
+                inputFile.delete();
+            }
         }
     }
 }

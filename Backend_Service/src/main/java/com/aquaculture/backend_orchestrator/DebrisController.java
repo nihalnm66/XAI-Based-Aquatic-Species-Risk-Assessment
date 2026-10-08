@@ -21,7 +21,7 @@ import java.util.UUID;
 public class DebrisController {
 
     @PostMapping({"/analyze", "/analyze-upload"})
-    public ResponseEntity<Map<String, String>> analyzeUpload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> analyzeUpload(@RequestParam("file") MultipartFile file) {
         File inputFile = null;
         try {
             String projectDir = System.getProperty("user.dir");
@@ -70,7 +70,9 @@ public class DebrisController {
                 );
 
                 ObjectMapper mapper = new ObjectMapper();
-                Map<String, String> result = mapper.readValue(jsonString, new TypeReference<Map<String, String>>() {});
+                Map<String, Object> result = mapper.readValue(
+                        jsonString, new TypeReference<Map<String, Object>>() {}
+                );
 
                 result.put("sessionId", uniqueId);
 
@@ -94,7 +96,7 @@ public class DebrisController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            Map<String, String> error = new HashMap<>();
+            Map<String, Object> error = new HashMap<>();
             error.put("error", e.getMessage() != null ? e.getMessage() : "Unknown analysis failure");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         } finally {

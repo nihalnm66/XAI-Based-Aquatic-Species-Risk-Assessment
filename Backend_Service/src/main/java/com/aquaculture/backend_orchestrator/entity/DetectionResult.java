@@ -3,6 +3,8 @@ package com.aquaculture.backend_orchestrator.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "detection_results")
@@ -21,6 +23,15 @@ public class DetectionResult {
     private String analysisSummary;
 
     private String overallRiskScore;
+
+    @Transient
+    private String xaiHeatmapUrl;
+
+    @Transient
+    private List<Map<String, Object>> speciesDetections;
+
+    @Transient
+    private List<Map<String, Object>> debrisDetections;
 
     private LocalDateTime createdAt = LocalDateTime.now();
 }

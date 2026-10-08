@@ -75,13 +75,21 @@ def iou_and_distance(
 
 def assess_risk(
     species: Sequence[dict], debris: Sequence[dict], shape: tuple[int, int]
-) -> tuple[str, str, list[dict]]:
+) -> tuple[str, str, str, list[str], list[dict]]:
     if not debris:
-        return "LOW", "No debris detected. Ecosystem appears clear.", []
+        return (
+            "LOW",
+            "No debris detected. Ecosystem appears clear.",
+            "The debris detector found no objects above the configured confidence threshold, so no species/debris exposure could be established.",
+            ["Continue routine monitoring of the habitat."],
+            [],
+        )
     if not species:
         return (
             "LOW",
             f"Detected {len(debris)} debris item(s), but no aquatic species were detected.",
+            f"The system detected {len(debris)} debris item(s), but no aquatic species above the configured confidence threshold. A species interaction cannot be confirmed from this image.",
+            ["Review the image manually and repeat monitoring with additional frames if species may be occluded."],
             [],
         )
 
@@ -99,32 +107,73 @@ def assess_risk(
             )
             normalized_distance = distance / diagonal if diagonal else 1.0
             if iou > 0.02 or normalized_distance < 0.15:
+                relation = (
+                    f"overlapping bounding boxes (IoU {iou:.1%})"
+                    if iou > 0.02
+                    else f"close center distance ({normalized_distance:.1%} of image diagonal)"
+                )
                 interactions.append(
                     {
                         "species": species_item["label"],
                         "debris": debris_item["label"],
+                        "speciesConfidence": species_item["confidence"],
+                        "debrisConfidence": debris_item["confidence"],
                         "iou": round(iou, 4),
                         "normalizedDistance": round(normalized_distance, 4),
                         "hazardous": is_hazardous,
+                        "relationship": relation,
                     }
                 )
 
     hazardous_count = sum(item["hazardous"] for item in interactions)
+    detected_species = ", ".join(
+        f'{item["label"]} ({item["confidence"]:.0%})' for item in species
+    )
+    detected_debris = ", ".join(
+        f'{item["label"]} ({item["confidence"]:.0%})' for item in debris
+    )
+    detail_lines = [
+        f"Detected species: {detected_species}.",
+        f"Detected debris: {detected_debris}.",
+    ]
+    recommendations = []
+    for index, interaction in enumerate(interactions, start=1):
+        hazard_text = "This is classified as a hazardous debris type." if interaction["hazardous"] else "This debris type is not classified as a primary entanglement hazard."
+        detail_lines.append(
+            f"Interaction {index}: {interaction['species']} is near {interaction['debris']} "
+            f"({interaction['relationship']}). {hazard_text}"
+        )
+
     if hazardous_count:
+        recommendations = [
+            "Prioritize removal or isolation of the hazardous debris.",
+            "Inspect the surrounding area for additional entanglement or ingestion hazards.",
+            "Continue observation of the affected species after debris removal.",
+        ]
         return (
             "HIGH",
-            f"CRITICAL: {hazardous_count} hazardous interaction(s) detected.",
+            f"CRITICAL: {hazardous_count} hazardous interaction(s) detected involving {len(species)} species and {len(debris)} debris item(s).",
+            " ".join(detail_lines),
+            recommendations,
             interactions,
         )
     if interactions:
+        recommendations = [
+            "Monitor the species/debris pair for changing proximity.",
+            "Remove the debris if it drifts closer or begins overlapping the species.",
+        ]
         return (
             "MEDIUM",
-            f"CAUTION: {len(interactions)} species/debris interaction(s) detected.",
+            f"CAUTION: {len(interactions)} species/debris interaction(s) detected involving {len(species)} species and {len(debris)} debris item(s).",
+            " ".join(detail_lines),
+            recommendations,
             interactions,
         )
     return (
         "LOW",
         f"Monitored {len(species)} species and {len(debris)} debris items with a safe distance buffer.",
+        " ".join(detail_lines) + " No species/debris pair crossed the configured IoU or proximity thresholds.",
+        ["Continue routine monitoring and rescan if the debris moves closer."],
         interactions,
     )
 
@@ -215,12 +264,14 @@ def main() -> None:
             if not cv2.imwrite(str(output_path), annotated):
                 raise IOError(f"Could not write annotated output: {output_path}")
 
-        risk, summary, interactions = assess_risk(
+        risk, summary, explanation, recommendations, interactions = assess_risk(
             species, debris, enhanced.shape[:2]
         )
         payload = {
             "overallRiskScore": risk,
             "analysisSummary": summary,
+            "detailedExplanation": explanation,
+            "recommendations": recommendations,
             "speciesDetections": species,
             "debrisDetections": debris,
             "interactions": interactions,

@@ -57,6 +57,18 @@
                             <strong class="text-gray-400 text-sm">Summary:</strong>
                             <p id="summary" class="bg-[#111827] p-3 rounded-lg text-gray-300 mt-1 text-sm border border-slate-700"></p>
                         </div>
+                        <div>
+                            <strong class="text-gray-400 text-sm">Detailed explanation:</strong>
+                            <p id="detailedExplanation" class="bg-[#111827] p-3 rounded-lg text-gray-300 mt-1 text-sm border border-slate-700 leading-relaxed"></p>
+                        </div>
+                        <div>
+                            <strong class="text-gray-400 text-sm">Recommended actions:</strong>
+                            <ul id="recommendations" class="bg-[#111827] p-3 rounded-lg text-gray-300 mt-1 text-sm border border-slate-700 list-disc list-inside space-y-1"></ul>
+                        </div>
+                        <div>
+                            <strong class="text-gray-400 text-sm">Detected objects:</strong>
+                            <div id="detectionDetails" class="bg-[#111827] p-3 rounded-lg text-gray-300 mt-1 text-sm border border-slate-700 space-y-1"></div>
+                        </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="bg-[#111827] rounded-lg border border-slate-600 p-2">
@@ -126,6 +138,9 @@
             document.getElementById('heatmapPlaceholder').classList.remove('hidden');
             document.getElementById('sessionId').innerText = '';
             document.getElementById('summary').innerText = '';
+            document.getElementById('detailedExplanation').innerText = '';
+            document.getElementById('recommendations').innerHTML = '';
+            document.getElementById('detectionDetails').innerHTML = '';
             document.getElementById('riskScore').innerText = '';
 
             const formData = new FormData();
@@ -148,6 +163,33 @@
                     if (data.analysisSummary) {
                         document.getElementById('summary').innerText = data.analysisSummary;
                     }
+                    document.getElementById('detailedExplanation').innerText =
+                        data.detailedExplanation || 'No detailed explanation was returned.';
+
+                    const recommendations = document.getElementById('recommendations');
+                    (data.recommendations || []).forEach((recommendation) => {
+                        const item = document.createElement('li');
+                        item.innerText = recommendation;
+                        recommendations.appendChild(item);
+                    });
+
+                    const detectionDetails = document.getElementById('detectionDetails');
+                    const species = data.speciesDetections || [];
+                    const debris = data.debrisDetections || [];
+                    const interactions = data.interactions || [];
+                    detectionDetails.innerHTML = `
+                        <p><strong class="text-blue-300">Species:</strong> ${
+                            species.length
+                                ? species.map((item) => `${item.label} (${(item.confidence * 100).toFixed(1)}%)`).join(', ')
+                                : 'None detected'
+                        }</p>
+                        <p><strong class="text-green-300">Debris:</strong> ${
+                            debris.length
+                                ? debris.map((item) => `${item.label} (${(item.confidence * 100).toFixed(1)}%)`).join(', ')
+                                : 'None detected'
+                        }</p>
+                        <p><strong class="text-yellow-300">Interactions:</strong> ${interactions.length}</p>
+                    `;
                     
                     if (data.overallRiskScore) {
                         const riskEl = document.getElementById('riskScore');

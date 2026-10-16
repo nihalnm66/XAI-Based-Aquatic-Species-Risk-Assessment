@@ -99,7 +99,7 @@ XAI-Based-Aquatic-Species-Risk-Assessment/
 │   └── yolo11m_aquatic_debris.pt     # Custom-trained YOLO11m production weights (~40.5MB)
 ├── py_scripts/                       # Python preprocessing and inference wrappers
 │   └── predict.py                    # Local inference script called by the Spring Boot backend
-└── README.md                         # Project documentation
+└── README.md                         # Project documentations
 
 ---
 

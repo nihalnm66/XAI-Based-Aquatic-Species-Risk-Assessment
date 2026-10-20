@@ -1,4 +1,4 @@
-# 🌊 XAI-Based Aquatic Species Risk Assessment & Marine Debris Detection
+# 🌊 An XAI-Based Conservation Framework for Identifying Aquatic Species under Risk in Natural Ecosystems
 
 An advanced, end-to-end intelligent system engineered to detect, classify, and evaluate the environmental risk of marine debris and aquatic waste from underwater imagery. This project integrates rigorous computer vision theory, custom-trained deep learning object detection, and a production-grade Java Spring Boot backend persistence layer.
 
@@ -12,6 +12,7 @@ An advanced, end-to-end intelligent system engineered to detect, classify, and e
 5. [Phase 4: Backend Orchestration & Development](#-phase-4-backend-orchestration--development)
 6. [Repository Structure](#-repository-structure)
 7. [Installation & Quick Start](#-installation--quick-start)
+8. [Deploy on Render](#-deploy-on-render)
 
 ---
 
@@ -94,9 +95,14 @@ The custom weights file (`yolo11m_aquatic_debris.pt`) is integrated into a robus
 XAI-Based-Aquatic-Species-Risk-Assessment/
 │
 ├── Backend_Service/                  # Java Spring Boot REST API & database orchestration
-├── Debris_Detection_Model/           # Model weights and training assets
+├── Debris_Detection_Model/           # YOLO11m aquatic debris model
 │   ├── Debris_Train.ipynb            # Complete Google Colab training & validation notebook
 │   └── yolo11m_aquatic_debris.pt     # Custom-trained YOLO11m production weights (~40.5MB)
+├── Species_Detection_Model/          # YOLO11 aquatic species model
+│   └── yolo11_species.pt             # Custom-trained species weights (~40.5MB)
+├── Dockerfile                        # Combined Java + Python deployment image
+├── render.yaml                       # Render web service and PostgreSQL blueprint
+├── requirements.txt                  # Python inference dependencies
 ├── py_scripts/                       # Python preprocessing and inference wrappers
 │   └── predict.py                    # Local inference script called by the Spring Boot backend
 └── README.md                         # Project documentations
@@ -118,7 +124,7 @@ cd XAI-Based-Aquatic-Species-Risk-Assessment
 Ensure dependencies (`ultralytics`, `opencv-python`, `numpy`) are installed, then test an image locally:
 
 ```bash
-python py_scripts/predict.py
+python py_scripts/predict.py /path/to/input.jpg /tmp/annotated.jpg
 
 ```
 
@@ -135,9 +141,28 @@ mvn spring-boot:run
 ### 4. Test the API Endpoint via cURL
 
 ```bash
-curl -X POST "http://localhost:8080/api/analyze?path=/path/to/image.jpg"
+curl -X POST "http://localhost:8080/api/analyze-upload" \
+  -F "file=@/path/to/image.jpg"
 
 ```
+
+## ☁️ Deploy on Render
+
+The repository includes a Docker deployment that packages the Spring Boot API,
+Python/Ultralytics runtime, frontend, and both model checkpoints into one web
+service. Render PostgreSQL supplies the database connection through environment
+variables, so local database credentials are not used in production.
+
+1. Push the repository to GitHub.
+2. Create a Render account and choose **New → Blueprint**.
+3. Select this GitHub repository and branch `main`.
+4. Render reads `render.yaml`, builds the Docker image, and creates the web service and database.
+5. Open the generated `https://...onrender.com` URL from any device.
+
+The free web service may sleep after inactivity, so the first request after a
+period of inactivity can take a few minutes. CPU-only inference is also slower
+than local GPU inference. Do not commit database passwords or other secrets;
+configure them in Render environment variables.
 
 ```json
 {

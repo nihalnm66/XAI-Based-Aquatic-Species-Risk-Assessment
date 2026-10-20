@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: aquatic-species-risk-assessment
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://${AQUACULTURE_DB_HOST}:${AQUACULTURE_DB_PORT}/aquaculture_db
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: aquaculture-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: aquaculture-db
+          property: password
+      - key: AQUACULTURE_DB_HOST
+        fromDatabase:
+          name: aquaculture-db
+          property: host
+      - key: AQUACULTURE_DB_PORT
+        fromDatabase:
+          name: aquaculture-db
+          property: port
+
+databases:
+  - name: aquaculture-db
+    databaseName: aquaculture_db
+    user: aquaculture
+    plan: free

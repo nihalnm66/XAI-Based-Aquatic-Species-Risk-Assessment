@@ -210,7 +210,11 @@
     </main>
 
     <script>
-        let authToken = "";
+        let authToken = localStorage.getItem("aquaticAuthToken") || "";
+
+        function isValidJwt(token) {
+            return typeof token === "string" && token.split(".").length === 3 && token.trim().length > 20;
+        }
         const uploadZone = document.getElementById("uploadZone");
 
         async function loginUser() {
@@ -224,7 +228,9 @@
                 });
                 if (!response.ok) throw new Error("Invalid credentials");
                 const data = await response.json();
-                authToken = data.token || data.jwt || data.accessToken;
+                authToken = data.token || data.jwt || data.accessToken || "";
+                if (!isValidJwt(authToken)) throw new Error("Login response did not contain a valid session token.");
+                localStorage.setItem("aquaticAuthToken", authToken);
                 document.getElementById("authCard").classList.add("hidden");
                 document.getElementById("appSection").classList.remove("hidden");
             } catch {
@@ -291,12 +297,22 @@
             button.disabled = true;
             document.getElementById("runButtonText").textContent = "Analyzing scene...";
 
+            if (!isValidJwt(authToken)) {
+                document.getElementById("loading").classList.add("hidden");
+                button.disabled = false;
+                document.getElementById("runButtonText").textContent = "Run aquatic risk assessment";
+                localStorage.removeItem("aquaticAuthToken");
+                authToken = "";
+                alert("Your login session is no longer valid. Please refresh and log in again.");
+                return;
+            }
+
             const formData = new FormData();
             formData.append("file", fileInput.files[0]);
             try {
-                const response = await fetch("/api/analyze-upload", {
+                const response = await fetch(new URL("/api/analyze-upload", window.location.origin).toString(), {
                     method: "POST",
-                    headers: { "Authorization": "Bearer " + authToken.trim() },
+                    headers: { Authorization: `Bearer ${authToken.trim()}` },
                     body: formData
                 });
                 const responseText = await response.text();

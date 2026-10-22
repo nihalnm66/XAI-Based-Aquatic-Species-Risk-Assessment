@@ -299,8 +299,17 @@
                     headers: { "Authorization": "Bearer " + authToken.trim() },
                     body: formData
                 });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.error || "Analysis failed");
+                const responseText = await response.text();
+                let data = {};
+                try {
+                    data = responseText ? JSON.parse(responseText) : {};
+                } catch {
+                    const statusMessage = response.status === 502 || response.status === 504
+                        ? "The analysis service timed out while loading the AI models. Please wait a moment and try again with a smaller image."
+                        : `The server returned an invalid response (HTTP ${response.status}).`;
+                    throw new Error(statusMessage);
+                }
+                if (!response.ok) throw new Error(data.error || `Analysis failed (HTTP ${response.status})`);
 
                 document.getElementById("sessionId").textContent = data.sessionId || "N/A";
                 document.getElementById("summary").textContent = data.analysisSummary || "No summary returned.";

@@ -6,7 +6,7 @@ services:
     healthCheckPath: /
     envVars:
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://${AQUACULTURE_DB_HOST}:${AQUACULTURE_DB_PORT}/aquaculture_db
+        value: jdbc:postgresql://${AQUACULTURE_DB_HOST}:${AQUACULTURE_DB_PORT}/${AQUACULTURE_DB_NAME}
       - key: SPRING_DATASOURCE_USERNAME
         fromDatabase:
           name: aquaculture-db
@@ -23,6 +23,12 @@ services:
         fromDatabase:
           name: aquaculture-db
           property: port
+      - key: AQUACULTURE_DB_NAME
+        fromDatabase:
+          name: aquaculture-db
+          property: database
+      - key: JWT_SECRET
+        generateValue: true
 
 databases:
   - name: aquaculture-db

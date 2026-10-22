@@ -42,7 +42,14 @@ def _label(model: YOLO, class_id: int) -> str:
 
 
 def detect(model: YOLO, image: np.ndarray, kind: str, confidence: float) -> list[dict]:
-    result = model.predict(image, conf=confidence, verbose=False)[0]
+    result = model.predict(
+        image,
+        conf=confidence,
+        imgsz=int(os.environ.get("INFERENCE_IMAGE_SIZE", "640")),
+        max_det=50,
+        device="cpu",
+        verbose=False,
+    )[0]
     detections = []
     for box in result.boxes:
         detections.append(
@@ -232,6 +239,14 @@ def main() -> None:
         )
         confidence = float(os.environ.get("DETECTION_CONFIDENCE", "0.25"))
         image = cv2.imread(str(input_path))
+        if image is None or image.size == 0:
+            raise ValueError("Input image could not be decoded")
+        max_dimension = int(os.environ.get("MAX_IMAGE_DIMENSION", "1280"))
+        height, width = image.shape[:2]
+        largest_dimension = max(height, width)
+        if largest_dimension > max_dimension:
+            scale = max_dimension / largest_dimension
+            image = cv2.resize(image, (round(width * scale), round(height * scale)), interpolation=cv2.INTER_AREA)
         enhanced = preprocess_underwater(image)
 
         species_model = YOLO(str(SPECIES_MODEL))

@@ -92,8 +92,8 @@
                 <p class="mt-2 text-sm text-slate-400">Access the aquatic species, debris, and explainable conservation assessment engine.</p>
             </div>
             <div class="space-y-3">
-                <input type="text" id="username" placeholder="Username" class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-white outline-none transition placeholder:text-slate-500 focus:border-cyanx/60 focus:ring-2 focus:ring-cyanx/10">
-                <input type="password" id="password" placeholder="Password" class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-white outline-none transition placeholder:text-slate-500 focus:border-cyanx/60 focus:ring-2 focus:ring-cyanx/10">
+                <input type="text" id="username" name="username" autocomplete="username" placeholder="Username" class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-white outline-none transition placeholder:text-slate-500 focus:border-cyanx/60 focus:ring-2 focus:ring-cyanx/10">
+                <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Password" class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-white outline-none transition placeholder:text-slate-500 focus:border-cyanx/60 focus:ring-2 focus:ring-cyanx/10">
                 <button onclick="loginUser()" class="w-full rounded-2xl bg-cyanx px-4 py-3.5 font-bold text-ink transition hover:brightness-110 active:scale-[.99]">Enter dashboard</button>
                 <p id="loginError" class="hidden text-center text-sm text-rose-300">Invalid username or password.</p>
             </div>

@@ -3,6 +3,7 @@ import json
 import math
 import os
 import sys
+from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -39,6 +40,11 @@ def _label(model: YOLO, class_id: int) -> str:
     if isinstance(names, dict):
         return str(names.get(class_id, f"class_{class_id}"))
     return str(names[class_id])
+
+
+@lru_cache(maxsize=1)
+def load_models() -> tuple[YOLO, YOLO]:
+    return YOLO(str(SPECIES_MODEL)), YOLO(str(DEBRIS_MODEL))
 
 
 def detect(model: YOLO, image: np.ndarray, kind: str, confidence: float) -> list[dict]:
@@ -249,8 +255,7 @@ def main() -> None:
             image = cv2.resize(image, (round(width * scale), round(height * scale)), interpolation=cv2.INTER_AREA)
         enhanced = preprocess_underwater(image)
 
-        species_model = YOLO(str(SPECIES_MODEL))
-        debris_model = YOLO(str(DEBRIS_MODEL))
+        species_model, debris_model = load_models()
         species = detect(species_model, enhanced, "species", confidence)
         debris = detect(debris_model, enhanced, "debris", confidence)
         all_detections = [*species, *debris]

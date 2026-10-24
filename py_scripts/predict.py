@@ -13,8 +13,8 @@ import onnxruntime as ort
 
 
 ROOT = Path(__file__).resolve().parent.parent
-SPECIES_MODEL = ROOT / "Species_Detection_Model" / "yolo11_species.onnx"
-DEBRIS_MODEL = ROOT / "Debris_Detection_Model" / "yolo11m_aquatic_debris.onnx"
+SPECIES_MODEL = ROOT / "Species_Detection_Model" / "yolo11_species.int8.onnx"
+DEBRIS_MODEL = ROOT / "Debris_Detection_Model" / "yolo11m_aquatic_debris.int8.onnx"
 SPECIES_LABELS = ("fish", "turtle", "dolphin", "whale", "seal", "crab", "lobster", "jellyfish", "starfish", "sea_urchin")
 DEBRIS_LABELS = ("Mask", "can", "cellphone", "electronics", "gbottle", "glove", "metal", "misc", "net", "pbag", "pbottle", "plastic", "rod", "sunglasses", "tire")
 JSON_START = "---JSON_START---"

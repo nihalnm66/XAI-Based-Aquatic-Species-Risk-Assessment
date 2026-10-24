@@ -102,6 +102,12 @@ def iou_and_distance(
     return float(iou), float(distance)
 
 
+def edge_gap(first: Sequence[float], second: Sequence[float]) -> float:
+    horizontal_gap = max(first[0] - second[2], second[0] - first[2], 0)
+    vertical_gap = max(first[1] - second[3], second[1] - first[3], 0)
+    return math.hypot(horizontal_gap, vertical_gap)
+
+
 def assess_risk(
     species: Sequence[dict], debris: Sequence[dict], shape: tuple[int, int]
 ) -> tuple[str, str, str, list[str], list[dict]]:
@@ -135,11 +141,25 @@ def assess_risk(
                 debris_item["bbox"], species_item["bbox"]
             )
             normalized_distance = distance / diagonal if diagonal else 1.0
-            if iou > 0.02 or normalized_distance < 0.15:
+            normalized_edge_gap = (
+                edge_gap(debris_item["bbox"], species_item["bbox"]) / diagonal
+                if diagonal
+                else 1.0
+            )
+            if (
+                iou > 0.02
+                or normalized_edge_gap < 0.05
+                or normalized_distance < 0.15
+            ):
                 relation = (
                     f"overlapping bounding boxes (IoU {iou:.1%})"
                     if iou > 0.02
-                    else f"close center distance ({normalized_distance:.1%} of image diagonal)"
+                    else (
+                        f"touching or near bounding boxes "
+                        f"(edge gap {normalized_edge_gap:.1%} of image diagonal)"
+                        if normalized_edge_gap < 0.05
+                        else f"close center distance ({normalized_distance:.1%} of image diagonal)"
+                    )
                 )
                 interactions.append(
                     {

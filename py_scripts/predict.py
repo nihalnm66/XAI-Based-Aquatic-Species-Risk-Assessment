@@ -9,12 +9,14 @@ from typing import Iterable, Sequence
 
 import cv2
 import numpy as np
-from ultralytics import YOLO
+import onnxruntime as ort
 
 
 ROOT = Path(__file__).resolve().parent.parent
-SPECIES_MODEL = ROOT / "Species_Detection_Model" / "yolo11_species.pt"
-DEBRIS_MODEL = ROOT / "Debris_Detection_Model" / "yolo11m_aquatic_debris.pt"
+SPECIES_MODEL = ROOT / "Species_Detection_Model" / "yolo11_species.onnx"
+DEBRIS_MODEL = ROOT / "Debris_Detection_Model" / "yolo11m_aquatic_debris.onnx"
+SPECIES_LABELS = ("fish", "turtle", "dolphin", "whale", "seal", "crab", "lobster", "jellyfish", "starfish", "sea_urchin")
+DEBRIS_LABELS = ("Mask", "can", "cellphone", "electronics", "gbottle", "glove", "metal", "misc", "net", "pbag", "pbottle", "plastic", "rod", "sunglasses", "tire")
 JSON_START = "---JSON_START---"
 JSON_END = "---JSON_END---"
 
@@ -35,30 +37,49 @@ def preprocess_underwater(image: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
 
 
-def _label(model: YOLO, class_id: int) -> str:
-    names = model.names
-    if isinstance(names, dict):
-        return str(names.get(class_id, f"class_{class_id}"))
-    return str(names[class_id])
+def detect(
+    session: ort.InferenceSession,
+    image: np.ndarray,
+    kind: str,
+    confidence: float,
+    labels: Sequence[str],
+) -> list[dict]:
+    image_size = int(os.environ.get("INFERENCE_IMAGE_SIZE", "640"))
+    height, width = image.shape[:2]
+    resized = cv2.resize(image, (image_size, image_size), interpolation=cv2.INTER_AREA)
+    tensor = resized[:, :, ::-1].transpose(2, 0, 1)[None].astype(np.float32) / 255.0
+    output = session.run(None, {session.get_inputs()[0].name: tensor})[0][0]
+    if output.shape[0] < output.shape[1]:
+        output = output.T
 
+    boxes, scores, class_ids = [], [], []
+    scale_x, scale_y = width / image_size, height / image_size
+    for row in output:
+        class_scores = row[4:]
+        class_id = int(np.argmax(class_scores))
+        score = float(class_scores[class_id])
+        if score < confidence or class_id >= len(labels):
+            continue
+        center_x, center_y, box_width, box_height = row[:4]
+        x1 = max(0.0, (center_x - box_width / 2) * scale_x)
+        y1 = max(0.0, (center_y - box_height / 2) * scale_y)
+        x2 = min(float(width), (center_x + box_width / 2) * scale_x)
+        y2 = min(float(height), (center_y + box_height / 2) * scale_y)
+        boxes.append([float(x1), float(y1), float(x2 - x1), float(y2 - y1)])
+        scores.append(score)
+        class_ids.append(class_id)
 
-def detect(model: YOLO, image: np.ndarray, kind: str, confidence: float) -> list[dict]:
-    result = model.predict(
-        image,
-        conf=confidence,
-        imgsz=int(os.environ.get("INFERENCE_IMAGE_SIZE", "640")),
-        max_det=50,
-        device="cpu",
-        verbose=False,
-    )[0]
+    kept = cv2.dnn.NMSBoxes(boxes, scores, confidence, 0.45)
     detections = []
-    for box in result.boxes:
+    for index in np.asarray(kept).reshape(-1):
+        index = int(index)
+        x, y, box_width, box_height = boxes[index]
         detections.append(
             {
                 "type": kind,
-                "label": _label(model, int(box.cls[0].item())),
-                "confidence": round(float(box.conf[0].item()), 4),
-                "bbox": [round(float(value), 1) for value in box.xyxy[0].tolist()],
+                "label": labels[class_ids[index]],
+                "confidence": round(scores[index], 4),
+                "bbox": [round(x, 1), round(y, 1), round(x + box_width, 1), round(y + box_height, 1)],
             }
         )
     return detections
@@ -250,16 +271,20 @@ def main() -> None:
             image = cv2.resize(image, (round(width * scale), round(height * scale)), interpolation=cv2.INTER_AREA)
         enhanced = preprocess_underwater(image)
 
-        # The Render free tier has 512 MB RAM. Load models one at a time so
-        # PyTorch never holds both model graphs and inference buffers together.
-        species_model = YOLO(str(SPECIES_MODEL))
-        species = detect(species_model, enhanced, "species", confidence)
-        del species_model
+        species_session = ort.InferenceSession(
+            str(SPECIES_MODEL),
+            providers=["CPUExecutionProvider"],
+        )
+        species = detect(species_session, enhanced, "species", confidence, SPECIES_LABELS)
+        del species_session
         gc.collect()
 
-        debris_model = YOLO(str(DEBRIS_MODEL))
-        debris = detect(debris_model, enhanced, "debris", confidence)
-        del debris_model
+        debris_session = ort.InferenceSession(
+            str(DEBRIS_MODEL),
+            providers=["CPUExecutionProvider"],
+        )
+        debris = detect(debris_session, enhanced, "debris", confidence, DEBRIS_LABELS)
+        del debris_session
         gc.collect()
         all_detections = [*species, *debris]
 

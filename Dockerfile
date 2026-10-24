@@ -7,8 +7,6 @@ RUN mvn -f Backend_Service/pom.xml dependency:go-offline -q
 COPY Backend_Service Backend_Service
 COPY Frontend/index.html Backend_Service/src/main/resources/static/index.html
 COPY py_scripts py_scripts
-COPY Debris_Detection_Model Debris_Detection_Model
-COPY Species_Detection_Model Species_Detection_Model
 RUN mvn -f Backend_Service/pom.xml package -DskipTests -q
 
 FROM eclipse-temurin:25-jre
@@ -21,8 +19,8 @@ WORKDIR /app/Backend_Service
 COPY --from=build /workspace/Backend_Service/target/*.jar /app/app.jar
 COPY requirements.txt /app/requirements.txt
 COPY py_scripts /app/py_scripts
-COPY Debris_Detection_Model /app/Debris_Detection_Model
-COPY Species_Detection_Model /app/Species_Detection_Model
+COPY Debris_Detection_Model/yolo11m_aquatic_debris.onnx /app/Debris_Detection_Model/yolo11m_aquatic_debris.onnx
+COPY Species_Detection_Model/yolo11_species.onnx /app/Species_Detection_Model/yolo11_species.onnx
 RUN pip3 install --no-cache-dir --break-system-packages -r /app/requirements.txt
 
 EXPOSE 8080

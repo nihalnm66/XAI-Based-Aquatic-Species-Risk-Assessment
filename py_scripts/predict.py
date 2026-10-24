@@ -260,6 +260,9 @@ def main() -> None:
             Path(sys.argv[2]).expanduser().resolve() if len(sys.argv) > 2 else None
         )
         confidence = float(os.environ.get("DETECTION_CONFIDENCE", "0.25"))
+        debris_confidence = float(
+            os.environ.get("DEBRIS_DETECTION_CONFIDENCE", "0.10")
+        )
         image = cv2.imread(str(input_path))
         if image is None or image.size == 0:
             raise ValueError("Input image could not be decoded")
@@ -283,7 +286,13 @@ def main() -> None:
             str(DEBRIS_MODEL),
             providers=["CPUExecutionProvider"],
         )
-        debris = detect(debris_session, enhanced, "debris", confidence, DEBRIS_LABELS)
+        debris = detect(
+            debris_session,
+            enhanced,
+            "debris",
+            debris_confidence,
+            DEBRIS_LABELS,
+        )
         del debris_session
         gc.collect()
         all_detections = [*species, *debris]

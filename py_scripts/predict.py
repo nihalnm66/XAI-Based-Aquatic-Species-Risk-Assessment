@@ -259,7 +259,7 @@ def main() -> None:
         output_path = (
             Path(sys.argv[2]).expanduser().resolve() if len(sys.argv) > 2 else None
         )
-        confidence = float(os.environ.get("DETECTION_CONFIDENCE", "0.25"))
+        confidence = float(os.environ.get("SPECIES_DETECTION_CONFIDENCE", "0.10"))
         debris_confidence = float(
             os.environ.get("DEBRIS_DETECTION_CONFIDENCE", "0.10")
         )

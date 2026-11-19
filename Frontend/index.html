@@ -88,14 +88,19 @@
         <section id="authCard" class="glass mx-auto mt-8 max-w-md rounded-3xl p-6 sm:p-8">
             <div class="mb-6">
                 <p class="text-xs font-bold uppercase tracking-[.24em] text-cyanx">Secure workspace</p>
-                <h2 class="mt-2 text-2xl font-bold text-white">Sign in to analyze</h2>
-                <p class="mt-2 text-sm text-slate-400">Access the aquatic species, debris, and explainable conservation assessment engine.</p>
+                <h2 id="authTitle" class="mt-2 text-2xl font-bold text-white">Sign in to analyze</h2>
+                <p id="authDescription" class="mt-2 text-sm text-slate-400">Access the aquatic species, debris, and explainable conservation assessment engine.</p>
             </div>
             <div class="space-y-3">
                 <input type="text" id="username" name="username" autocomplete="username" placeholder="Username" class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-white outline-none transition placeholder:text-slate-500 focus:border-cyanx/60 focus:ring-2 focus:ring-cyanx/10">
                 <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Password" class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-white outline-none transition placeholder:text-slate-500 focus:border-cyanx/60 focus:ring-2 focus:ring-cyanx/10">
-                <button onclick="loginUser()" class="w-full rounded-2xl bg-cyanx px-4 py-3.5 font-bold text-ink transition hover:brightness-110 active:scale-[.99]">Enter dashboard</button>
-                <p id="loginError" class="hidden text-center text-sm text-rose-300">Invalid username or password.</p>
+                <input type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password" placeholder="Confirm password" class="hidden w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-white outline-none transition placeholder:text-slate-500 focus:border-cyanx/60 focus:ring-2 focus:ring-cyanx/10">
+                <button id="authButton" onclick="loginUser()" class="w-full rounded-2xl bg-cyanx px-4 py-3.5 font-bold text-ink transition hover:brightness-110 active:scale-[.99]">Enter dashboard</button>
+                <p id="authMessage" class="hidden text-center text-sm"></p>
+                <p class="text-center text-sm text-slate-400">
+                    <span id="authPrompt">New to AquaSentinel?</span>
+                    <button id="authToggle" type="button" onclick="toggleAuthMode()" class="font-semibold text-cyanx hover:underline">Create an account</button>
+                </p>
             </div>
         </section>
 
@@ -211,11 +216,34 @@
 
     <script>
         let authToken = localStorage.getItem("aquaticAuthToken") || "";
+        let authMode = "login";
 
         function isValidJwt(token) {
             return typeof token === "string" && token.split(".").length === 3 && token.trim().length > 20;
         }
         const uploadZone = document.getElementById("uploadZone");
+
+        function showAuthMessage(message, isError = true) {
+            const element = document.getElementById("authMessage");
+            element.textContent = message;
+            element.className = `text-center text-sm ${isError ? "text-rose-300" : "text-emerald-300"}`;
+        }
+
+        function toggleAuthMode() {
+            authMode = authMode === "login" ? "register" : "login";
+            const registering = authMode === "register";
+            document.getElementById("authTitle").textContent = registering ? "Create your account" : "Sign in to analyze";
+            document.getElementById("authDescription").textContent = registering
+                ? "Create an account to access aquatic species, debris, and explainable conservation assessments."
+                : "Access the aquatic species, debris, and explainable conservation assessment engine.";
+            document.getElementById("confirmPassword").classList.toggle("hidden", !registering);
+            document.getElementById("confirmPassword").required = registering;
+            document.getElementById("authButton").textContent = registering ? "Create account" : "Enter dashboard";
+            document.getElementById("authButton").onclick = registering ? registerUser : loginUser;
+            document.getElementById("authPrompt").textContent = registering ? "Already have an account?" : "New to AquaSentinel?";
+            document.getElementById("authToggle").textContent = registering ? "Sign in" : "Create an account";
+            document.getElementById("authMessage").className = "hidden text-center text-sm";
+        }
 
         async function loginUser() {
             const username = document.getElementById("username").value.trim();
@@ -234,7 +262,40 @@
                 document.getElementById("authCard").classList.add("hidden");
                 document.getElementById("appSection").classList.remove("hidden");
             } catch {
-                document.getElementById("loginError").classList.remove("hidden");
+                showAuthMessage("Invalid username or password.");
+            }
+        }
+
+        async function registerUser() {
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+            if (!username || !password) {
+                showAuthMessage("Enter a username and password.");
+                return;
+            }
+            if (password.length < 8) {
+                showAuthMessage("Password must contain at least 8 characters.");
+                return;
+            }
+            if (password !== confirmPassword) {
+                showAuthMessage("Passwords do not match.");
+                return;
+            }
+            try {
+                const response = await fetch("/api/auth/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+                const message = await response.text();
+                if (!response.ok) throw new Error(message || "Could not create account.");
+                toggleAuthMode();
+                showAuthMessage("Account created. You can now sign in.", false);
+                document.getElementById("password").value = "";
+                document.getElementById("confirmPassword").value = "";
+            } catch (error) {
+                showAuthMessage(error.message || "Could not create account.");
             }
         }
 

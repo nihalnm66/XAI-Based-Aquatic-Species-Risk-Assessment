@@ -1,6 +1,6 @@
 # 🌊 An XAI-Based Conservation Framework for Identifying Aquatic Species under Risk in Natural Ecosystems
 
-An advanced, end-to-end intelligent system engineered to detect, classify, and evaluate the environmental risk of marine debris and aquatic waste from underwater imagery. This project integrates rigorous computer vision theory, custom-trained deep learning object detection, and a production-grade Java Spring Boot backend persistence layer.
+An end-to-end intelligent system for detecting aquatic species and marine debris in underwater imagery, then estimating species/debris interaction risk. The production runtime combines a Java Spring Boot API with a Python preprocessing and **INT8 ONNX Runtime** inference pipeline.
 
 ---
 
@@ -9,7 +9,7 @@ An advanced, end-to-end intelligent system engineered to detect, classify, and e
 2. [Phase 1: Preprocessing & Enhancement Pipeline](#-phase-1-preprocessing--enhancement-pipeline)
 3. [Phase 2: Model Training & Architecture](#-phase-2-model-training--architecture)
 4. [Phase 3: Model Evaluation & Performance Metrics](#-phase-3-model-evaluation--performance-metrics)
-5. [Phase 4: Backend Orchestration & Development](#-phase-4-backend-orchestration--development)
+5. [Phase 4: Production Runtime & Backend Orchestration](#-phase-4-production-runtime--backend-orchestration)
 6. [Repository Structure](#-repository-structure)
 7. [Installation & Quick Start](#-installation--quick-start)
 8. [Deploy on Render](#-deploy-on-render)
@@ -22,7 +22,7 @@ Underwater photography and videography suffer from severe optical degradation ca
 * **Wavelength-Dependent Absorption:** Red light is absorbed within the first few meters of water, followed by green and blue, resulting in heavy blue/green color casts.
 * **Optical Scattering:** Suspended particles cause forward and backward scattering, generating dense optical haze and lowering contrast.
 
-Without targeted enhancement, standard object detection models experience massive performance drops due to obscured edges and distorted textures. This project solves this challenge by decoupling **image enhancement** from **object detection**, passing optimized visual data into a state-of-the-art YOLOv11 model.
+Without targeted enhancement, standard object detection models experience massive performance drops due to obscured edges and distorted textures. This project solves this challenge by decoupling **image enhancement** from **object detection**, passing optimized visual data into exported YOLO11 models.
 
 ---
 
@@ -45,10 +45,10 @@ Implemented via Python, OpenCV, and NumPy inside Google Colab (`Debris_Train.ipy
 
 ## 🚀 Phase 2: Model Training & Architecture
 
-The object detection engine utilizes **YOLO11m (Medium)**, chosen for its optimal balance between inference speed and parameter capacity (~20.04 million parameters) to support downstream explainability modules.
+The training pipeline uses **YOLO11m (Medium)** for debris detection and a YOLO11 species detector. Production inference uses their exported, quantized **INT8 ONNX** versions so the service can run efficiently on Render's CPU-based container.
 
 * **Training Specifications:**
-  * **Framework:** Ultralytics YOLOv11 (PyTorch / CUDA backend)
+  * **Framework:** Ultralytics YOLOv11 during training; ONNX Runtime during production inference
   * **Base Weights:** `yolo11m.pt` (Transfer Learning)
   * **Epochs:** 50
   * **Image Size:** $640 \times 640$
@@ -60,6 +60,8 @@ The object detection engine utilizes **YOLO11m (Medium)**, chosen for its optima
 ## 📊 Phase 3: Model Evaluation & Performance Metrics
 
 Following 50 epochs of training, the model weights checkpoint (`best.pt`) was validated against 1,001 validation images (1,891 total instances):
+
+The metrics below describe the original PyTorch training/evaluation checkpoint; production inference uses the corresponding INT8 ONNX exports.
 
 ### **Core Accuracy Metrics**
 * **mAP50 (Overall Accuracy):** **73.5%** ($0.7346$)
@@ -79,13 +81,14 @@ Following 50 epochs of training, the model weights checkpoint (`best.pt`) was va
 
 ---
 
-## 💻 Phase 4: Backend Orchestration & Development
+## 💻 Phase 4: Production Runtime & Backend Orchestration
 
-The custom weights file (`yolo11m_aquatic_debris.pt`) is integrated into a robust **Java Spring Boot** backend architecture:
+The production service is a **Java Spring Boot** API backed by a Python/OpenCV/ONNX Runtime inference process:
 
-* **RESTful API (`/api/analyze`)**: Accepts image pathways, triggers Python-based preprocessing and YOLO inference pipelines (`predict.py`), and evaluates environmental risk classifications (`HIGH`, `MEDIUM`, `LOW`).
-* **Database Persistence (PostgreSQL & Hibernate)**: Automatically records session UUIDs, creation timestamps, original image paths, explanation heatmap paths, and detection summaries into the `aquaculture_db` relational database (`detection_results` table).
-* **Explainability Support**: High parameter capacity ensures downstream Grad-CAM modules generate clear, precise attribution heatmaps for end users.
+* **RESTful API (`/api/analyze` and `/api/analyze-upload`)**: Accepts a multipart image upload, runs `py_scripts/predict.py`, and returns `HIGH`, `MEDIUM`, or `LOW` risk classifications.
+* **INT8 ONNX inference**: `predict.py` loads `Species_Detection_Model/yolo11_species.int8.onnx` and `Debris_Detection_Model/yolo11m_aquatic_debris.int8.onnx` with `CPUExecutionProvider`.
+* **Preprocessing and XAI output**: Gray-world white balance, LAB/CLAHE enhancement, bounding-box annotations, and confidence-weighted activation heatmaps are generated for each analysis.
+* **Persistence and authentication**: PostgreSQL/Hibernate persistence and JWT authentication are provided by the Spring Boot backend. Render supplies database connection values and generates `JWT_SECRET`.
 
 ---
 
@@ -97,9 +100,11 @@ XAI-Based-Aquatic-Species-Risk-Assessment/
 ├── Backend_Service/                  # Java Spring Boot REST API & database orchestration
 ├── Debris_Detection_Model/           # YOLO11m aquatic debris model
 │   ├── Debris_Train.ipynb            # Complete Google Colab training & validation notebook
-│   └── yolo11m_aquatic_debris.pt     # Custom-trained YOLO11m production weights (~40.5MB)
+│   ├── yolo11m_aquatic_debris.pt     # Training checkpoint
+│   └── yolo11m_aquatic_debris.int8.onnx # Production CPU inference model
 ├── Species_Detection_Model/          # YOLO11 aquatic species model
-│   └── yolo11_species.pt             # Custom-trained species weights (~40.5MB)
+│   ├── yolo11_species.pt             # Training checkpoint
+│   └── yolo11_species.int8.onnx      # Production CPU inference model
 ├── Dockerfile                        # Combined Java + Python deployment image
 ├── render.yaml                       # Render web service and PostgreSQL blueprint
 ├── requirements.txt                  # Python inference dependencies
@@ -121,9 +126,10 @@ cd XAI-Based-Aquatic-Species-Risk-Assessment
 
 ### 2. Run Local Python Inference
 
-Ensure dependencies (`ultralytics`, `opencv-python`, `numpy`) are installed, then test an image locally:
+Install the production inference dependencies, then test an image locally:
 
 ```bash
+python3 -m pip install -r requirements.txt
 python py_scripts/predict.py /path/to/input.jpg /tmp/annotated.jpg
 
 ```
@@ -149,15 +155,18 @@ curl -X POST "http://localhost:8080/api/analyze-upload" \
 ## ☁️ Deploy on Render
 
 The repository includes a Docker deployment that packages the Spring Boot API,
-Python/Ultralytics runtime, frontend, and both model checkpoints into one web
-service. Render PostgreSQL supplies the database connection through environment
-variables, so local database credentials are not used in production.
+Python/OpenCV/NumPy/ONNX Runtime, frontend, and both INT8 ONNX models into one
+CPU-based web service. Render PostgreSQL supplies the database connection
+through environment variables, so local database credentials are not used in
+production.
 
 1. Push the repository to GitHub.
 2. Create a Render account and choose **New → Blueprint**.
 3. Select this GitHub repository and branch `main`.
 4. Render reads `render.yaml`, builds the Docker image, and creates the web service and database.
-5. Open the generated `https://...onrender.com` URL from any device.
+5. Open the generated `https://...onrender.com` URL from any device. The
+   frontend is served at `/`, and image analysis is available at
+   `/api/analyze-upload` (also `/api/analyze`).
 
 The free web service may sleep after inactivity, so the first request after a
 period of inactivity can take a few minutes. CPU-only inference is also slower
@@ -166,11 +175,16 @@ configure them in Render environment variables.
 
 ```json
 {
-  "analysisSummary": "Summary: Detected: pbag (92.7%) | Risk: HIGH",
-  "createdAt": "2026-08-15T17:52:00.641671",
-  "heatmapPath": "outputs/heatmap_/path/to/image.jpg",
-  "id": 6,
-  "originalImagePath": "/path/to/image.jpg",
+  "analysisSummary": "CRITICAL: 1 hazardous interaction(s) detected.",
+  "detailedExplanation": "Detected species: ...",
+  "recommendations": [
+    "Continue routine monitoring and rescan if the debris moves closer."
+  ],
+  "speciesDetections": [],
+  "debrisDetections": [],
+  "interactions": [],
+  "annotatedImageUrl": "data:image/jpeg;base64,...",
+  "xaiHeatmapUrl": "data:image/jpeg;base64,...",
   "overallRiskScore": "HIGH",
   "sessionId": "fb216712-2c76-404a-9b56-709e4082b494"
 }
